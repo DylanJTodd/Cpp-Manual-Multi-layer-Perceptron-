@@ -1,0 +1,26 @@
+# VS / Visual Studio
+.vs/
+*.vcxproj*
+*.user
+*.suo
+
+# Compiled binaries
+*.exe
+*.obj
+*.o
+*.dll
+*.lib
+
+# Build directories
+Debug/
+Release/
+build/
+
+# SFML or other libraries
+*.a
+*.so
+*.dylib
+
+# OS-specific
+Thumbs.db
+.DS_Store
