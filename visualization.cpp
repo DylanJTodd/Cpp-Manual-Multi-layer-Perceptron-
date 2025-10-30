@@ -232,9 +232,11 @@ void Visualizer::run() {
             if (mode == VisualizationMode::Interactive) {
                 if (event.type == sf::Event::MouseButtonPressed) {
                     is_drawing = true;
+                    has_last_pos = false;
                 }
                 if (event.type == sf::Event::MouseButtonReleased) {
                     is_drawing = false;
+                    has_last_pos = false;
                 }
                 if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::C) {
                     std::lock_guard<std::mutex> lk(mutex_drawing);
@@ -255,22 +257,56 @@ void Visualizer::run() {
             if (mouse_pos.x >= canvas_offset_x && mouse_pos.x < canvas_offset_x + canvas_pixel_size &&
                 mouse_pos.y >= canvas_offset_y && mouse_pos.y < canvas_offset_y + canvas_pixel_size) {
 
-                float cell_x = (mouse_pos.x - canvas_offset_x) / 20.0f;
-                float cell_y = (mouse_pos.y - canvas_offset_y) / 20.0f;
-
                 std::lock_guard<std::mutex> lk(mutex_drawing);
-                for (int dy = -1; dy <= 1; ++dy) {
-                    for (int dx = -1; dx <= 1; ++dx) {
-                        int nx = static_cast<int>(cell_x + dx);
-                        int ny = static_cast<int>(cell_y + dy);
-                        if (nx >= 0 && nx < MNIST_IMAGE_SIZE && ny >= 0 && ny < MNIST_IMAGE_SIZE) {
-                            float distance = std::sqrt(static_cast<float>(dx * dx + dy * dy));
-                            float intensity = (distance < 1.0f) ? 1.0f :
-                                std::max(0.0f, 1.0f - (distance - 1.0f));
-                            canvas[ny][nx] = std::min(1.0f, canvas[ny][nx] + intensity * DRAWING_BRUSH_INTENSITY);
+
+                if (has_last_pos) {
+                    float x0 = (last_mouse_pos.x - canvas_offset_x) / 20.0f;
+                    float y0 = (last_mouse_pos.y - canvas_offset_y) / 20.0f;
+                    float x1 = (mouse_pos.x - canvas_offset_x) / 20.0f;
+                    float y1 = (mouse_pos.y - canvas_offset_y) / 20.0f;
+
+                    float distance = std::sqrt((x1 - x0) * (x1 - x0) + (y1 - y0) * (y1 - y0));
+                    int num_steps = std::max(1, static_cast<int>(distance * 2));
+
+                    for (int step = 0; step <= num_steps; ++step) {
+                        float t = num_steps > 0 ? static_cast<float>(step) / num_steps : 0.0f;
+                        float cell_x = x0 + t * (x1 - x0);
+                        float cell_y = y0 + t * (y1 - y0);
+
+                        for (int dy = -1; dy <= 1; ++dy) {
+                            for (int dx = -1; dx <= 1; ++dx) {
+                                int nx = static_cast<int>(cell_x + dx);
+                                int ny = static_cast<int>(cell_y + dy);
+                                if (nx >= 0 && nx < MNIST_IMAGE_SIZE && ny >= 0 && ny < MNIST_IMAGE_SIZE) {
+                                    float dist = std::sqrt(static_cast<float>(dx * dx + dy * dy));
+                                    float intensity = (dist < 1.0f) ? 1.0f :
+                                        std::max(0.0f, 1.0f - (dist - 1.0f));
+                                    canvas[ny][nx] = std::min(1.0f, canvas[ny][nx] + intensity * DRAWING_BRUSH_INTENSITY);
+                                }
+                            }
                         }
                     }
                 }
+                else {
+                    float cell_x = (mouse_pos.x - canvas_offset_x) / 20.0f;
+                    float cell_y = (mouse_pos.y - canvas_offset_y) / 20.0f;
+
+                    for (int dy = -1; dy <= 1; ++dy) {
+                        for (int dx = -1; dx <= 1; ++dx) {
+                            int nx = static_cast<int>(cell_x + dx);
+                            int ny = static_cast<int>(cell_y + dy);
+                            if (nx >= 0 && nx < MNIST_IMAGE_SIZE && ny >= 0 && ny < MNIST_IMAGE_SIZE) {
+                                float distance = std::sqrt(static_cast<float>(dx * dx + dy * dy));
+                                float intensity = (distance < 1.0f) ? 1.0f :
+                                    std::max(0.0f, 1.0f - (distance - 1.0f));
+                                canvas[ny][nx] = std::min(1.0f, canvas[ny][nx] + intensity * DRAWING_BRUSH_INTENSITY);
+                            }
+                        }
+                    }
+                }
+
+                last_mouse_pos = mouse_pos;
+                has_last_pos = true;
             }
         }
 

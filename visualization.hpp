@@ -177,6 +177,8 @@ private:
 
     std::vector<std::vector<float>> canvas;
     bool is_drawing = false;
+    sf::Vector2i last_mouse_pos;
+    bool has_last_pos = false;
     std::vector<float> current_prediction;
     bool has_prediction = false;
 

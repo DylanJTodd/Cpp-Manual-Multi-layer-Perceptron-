@@ -3,6 +3,7 @@
 *.vcxproj*
 *.user
 *.suo
+*.sln
 
 # Compiled binaries
 *.exe
